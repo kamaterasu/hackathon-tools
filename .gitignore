@@ -3,3 +3,11 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+coverage/
+build/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.vscode/
+Thumbs.db
+.pnpm-store/
