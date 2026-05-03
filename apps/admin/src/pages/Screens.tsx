@@ -87,7 +87,7 @@ export function Screens() {
             </div>
           </Link>
         ))}
-        {screens.length === 0 && <p className="text-gray-500 text-sm col-span-3">No screens registered yet.</p>}
+        {screens.length === 0 && <p className="text-gray-500 text-sm col-span-full">No screens registered yet.</p>}
       </div>
     </div>
   );

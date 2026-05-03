@@ -24,11 +24,16 @@ export function Media() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['media'] }); setShowUrl(false); setUrlForm({ name: '', url: '', duration: '30' }); },
   });
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const onDrop = useCallback(async (files: File[]) => {
     setUploading(true);
+    setUploadError(null);
     try {
       for (const f of files) await api.media.upload(f);
       qc.invalidateQueries({ queryKey: ['media'] });
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -58,6 +63,10 @@ export function Media() {
           {uploading ? 'Uploading...' : isDragActive ? 'Drop here...' : 'Drag & drop or click to upload (images, videos, PPTX)'}
         </p>
       </div>
+
+      {uploadError && (
+        <p className="text-sm text-red-400 mb-4">{uploadError}</p>
+      )}
 
       {showUrl && (
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6 max-w-md">

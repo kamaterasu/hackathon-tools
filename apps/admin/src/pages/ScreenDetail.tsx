@@ -16,6 +16,7 @@ export function ScreenDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   const { data: screen, isLoading } = useQuery({ queryKey: ['screens', id], queryFn: () => api.screens.get(id!) });
   const { data: playlists = [] } = useQuery({ queryKey: ['playlists'], queryFn: api.playlists.list });
@@ -45,7 +46,7 @@ export function ScreenDetail() {
   if (isLoading) return <div className="p-8 text-gray-400">Loading...</div>;
   if (!s) return <div className="p-8 text-red-400">Screen not found</div>;
 
-  const playerUrl = `${window.location.protocol}//${window.location.hostname}:5174/?screenId=${s.id}&apiKey=${s.api_key}`;
+  const playerUrl = `${window.location.protocol}//${window.location.hostname}:5174/?screenId=${s.id}&apiKey=${encodeURIComponent(s.api_key)}`;
 
   return (
     <div className="p-8 max-w-3xl">
@@ -59,7 +60,12 @@ export function ScreenDetail() {
           <h1 className="text-2xl font-bold">{s.name}</h1>
           {s.location && <p className="text-gray-400 text-sm">{s.location}</p>}
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-xs text-gray-600 font-mono">API Key: {s.api_key}</p>
+            <p className="text-xs text-gray-600 font-mono">
+              API Key: {showKey ? s.api_key : '••••••••••••••••'}
+            </p>
+            <button onClick={() => setShowKey(v => !v)} className="text-xs text-gray-500 hover:text-gray-300">
+              {showKey ? 'hide' : 'show'}
+            </button>
             <button onClick={copyKey} className="text-gray-500 hover:text-gray-300">
               <Copy size={12} />
             </button>
@@ -107,7 +113,7 @@ export function ScreenDetail() {
         <h2 className="text-sm font-semibold mb-3">Assign Playlist</h2>
         <select
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
-          defaultValue={s.current_playlist_id ?? ''}
+          value={s.current_playlist_id ?? ''}
           onChange={e => e.target.value && assign.mutate(e.target.value)}>
           <option value="">— Select playlist —</option>
           {(playlists as Playlist[]).map(p => (

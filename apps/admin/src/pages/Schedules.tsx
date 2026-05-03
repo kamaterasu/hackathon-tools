@@ -10,7 +10,7 @@ type Screen = { id: string; name: string };
 type Playlist = { id: string; name: string };
 type Schedule = { id: string; screen_name: string; playlist_name: string; start_at: string; end_at?: string };
 
-const localizer = dateFnsLocalizer({ format, parse, startOfWeek: () => startOfWeek(new Date()), getDay, locales: {} });
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek: () => 0, getDay, locales: {} });
 
 export function Schedules() {
   const qc = useQueryClient();

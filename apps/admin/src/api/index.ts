@@ -24,10 +24,12 @@ export const api = {
   },
   media: {
     list: () => apiFetch<unknown[]>('/media'),
-    upload: (file: File) => {
+    upload: async (file: File): Promise<unknown> => {
       const fd = new FormData();
       fd.append('file', file);
-      return fetch(`${base}/media/upload`, { method: 'POST', body: fd }).then(r => r.json());
+      const res = await fetch(`${base}/media/upload`, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
     },
     addUrl: (body: { name: string; url: string; duration_seconds?: number }) =>
       apiFetch('/media/url', { method: 'POST', body: JSON.stringify(body) }),

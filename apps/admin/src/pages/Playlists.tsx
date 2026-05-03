@@ -145,7 +145,7 @@ export function Playlists() {
               <div className="space-y-2">
                 {d.items.map(item => (
                   <SortableItem
-                    key={item.id}
+                    key={`${item.id}-${item.duration_seconds ?? 10}`}
                     item={item}
                     onRemove={() => removeItem.mutate(item.id)}
                     onDurationChange={(seconds) => updateItem.mutate({ itemId: item.id, duration_seconds: seconds })}
