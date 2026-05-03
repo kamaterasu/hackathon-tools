@@ -6,12 +6,16 @@ import { CSS } from '@dnd-kit/utilities';
 import { Plus, GripVertical, Trash2 } from 'lucide-react';
 import { api } from '../api/index.js';
 
-type Item = { id: string; media: { name: string; type: string } };
+type Item = { id: string; media: { name: string; type: string }; duration_seconds?: number };
 type PlaylistDetail = { id: string; name: string; items: Item[] };
 type Playlist = { id: string; name: string };
 type MediaItem = { id: string; name: string };
 
-function SortableItem({ item, onRemove }: { item: Item; onRemove: () => void }) {
+function SortableItem({ item, onRemove, onDurationChange }: {
+  item: Item;
+  onRemove: () => void;
+  onDurationChange: (seconds: number) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}
@@ -19,6 +23,15 @@ function SortableItem({ item, onRemove }: { item: Item; onRemove: () => void }) 
       <span {...attributes} {...listeners} className="cursor-grab text-gray-600 touch-none"><GripVertical size={16} /></span>
       <span className="flex-1 text-sm">{item.media.name}</span>
       <span className="text-xs text-gray-500 uppercase">{item.media.type}</span>
+      <input
+        type="number"
+        min={1}
+        className="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-center"
+        defaultValue={item.duration_seconds ?? 10}
+        onBlur={e => onDurationChange(Number(e.target.value))}
+        onClick={e => e.stopPropagation()}
+      />
+      <span className="text-xs text-gray-600">s</span>
       <button onClick={onRemove} className="text-gray-600 hover:text-red-400 ml-1"><Trash2 size={14} /></button>
     </div>
   );
@@ -52,6 +65,20 @@ export function Playlists() {
 
   const removeItem = useMutation({
     mutationFn: (itemId: string) => api.playlists.removeItem(selected!, itemId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['playlists', selected] }),
+  });
+
+  const updateItem = useMutation({
+    mutationFn: ({ itemId, duration_seconds }: { itemId: string; duration_seconds: number }) => {
+      const d = detail as PlaylistDetail | undefined;
+      if (!d) return Promise.resolve();
+      const items = d.items.map((item, position) => ({
+        id: item.id,
+        position,
+        duration_seconds: item.id === itemId ? duration_seconds : item.duration_seconds,
+      }));
+      return api.playlists.update(selected!, { items });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['playlists', selected] }),
   });
 
@@ -117,7 +144,12 @@ export function Playlists() {
             <SortableContext items={d.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
                 {d.items.map(item => (
-                  <SortableItem key={item.id} item={item} onRemove={() => removeItem.mutate(item.id)} />
+                  <SortableItem
+                    key={item.id}
+                    item={item}
+                    onRemove={() => removeItem.mutate(item.id)}
+                    onDurationChange={(seconds) => updateItem.mutate({ itemId: item.id, duration_seconds: seconds })}
+                  />
                 ))}
               </div>
             </SortableContext>

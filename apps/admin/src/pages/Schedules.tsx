@@ -1,11 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
+import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { api } from '../api/index.js';
 
 type Screen = { id: string; name: string };
 type Playlist = { id: string; name: string };
 type Schedule = { id: string; screen_name: string; playlist_name: string; start_at: string; end_at?: string };
+
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek: () => startOfWeek(new Date()), getDay, locales: {} });
 
 export function Schedules() {
   const qc = useQueryClient();
@@ -27,9 +32,27 @@ export function Schedules() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['schedules'] }),
   });
 
+  const events = (schedules as Schedule[]).map(s => ({
+    id: s.id,
+    title: `${s.screen_name} → ${s.playlist_name}`,
+    start: new Date(s.start_at),
+    end: s.end_at ? new Date(s.end_at) : new Date(new Date(s.start_at).getTime() + 3600000),
+  }));
+
   return (
     <div className="p-8 max-w-3xl">
       <h1 className="text-2xl font-bold mb-6">Schedules</h1>
+
+      <div style={{ height: 500 }} className="mb-6">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          defaultView={Views.WEEK}
+          style={{ background: '#111827', color: '#fff' }}
+        />
+      </div>
 
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6">
         <h2 className="text-sm font-semibold mb-3">New Schedule</h2>

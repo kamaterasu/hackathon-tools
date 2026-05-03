@@ -75,6 +75,20 @@ export function ScreenDetail() {
         </button>
       </div>
 
+      {s.status === 'online' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
+          <h2 className="text-sm font-semibold mb-3">Live Preview</h2>
+          <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+            <iframe
+              src={playerUrl}
+              className="w-full h-full rounded-lg border border-gray-700 pointer-events-none"
+              sandbox="allow-scripts allow-same-origin"
+              title="Live preview"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
         <h2 className="text-sm font-semibold mb-3">Live Controls</h2>
         <div className="flex gap-2">

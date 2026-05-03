@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Monitor, Plus, Wifi, WifiOff } from 'lucide-react';
+import { Monitor, Plus, SkipForward, Wifi, WifiOff } from 'lucide-react';
 import { api } from '../api/index.js';
 import { socket } from '../socket.js';
 
@@ -29,6 +29,11 @@ export function Screens() {
     socket.on('screen:status', handler);
     return () => { socket.off('screen:status', handler); };
   }, [qc]);
+
+  const sendNext = (screenId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    api.screens.command(screenId, 'next');
+  };
 
   if (isLoading) return <div className="p-8 text-gray-400">Loading...</div>;
 
@@ -74,6 +79,12 @@ export function Screens() {
             <p className="font-semibold">{s.name}</p>
             {s.location && <p className="text-xs text-gray-500 mt-0.5">{s.location}</p>}
             {s.playlist_name && <p className="text-xs text-blue-400 mt-2">▶ {s.playlist_name}</p>}
+            <div className="flex justify-end mt-3 pt-2 border-t border-gray-800">
+              <button onClick={(e) => sendNext(s.id, e)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded">
+                <SkipForward size={12} /> Next
+              </button>
+            </div>
           </Link>
         ))}
         {screens.length === 0 && <p className="text-gray-500 text-sm col-span-3">No screens registered yet.</p>}

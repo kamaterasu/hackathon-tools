@@ -4,7 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import { Trash2, Upload, Film, Image as ImgIcon, Presentation, Globe } from 'lucide-react';
 import { api } from '../api/index.js';
 
-type MediaItem = { id: string; name: string; type: string; thumbnail_url?: string };
+type MediaItem = { id: string; name: string; type: string; thumbnail_url?: string; slide_count?: number };
 const icons = { image: ImgIcon, video: Film, pptx: Presentation, url: Globe } as const;
 
 export function Media() {
@@ -95,6 +95,11 @@ export function Media() {
                 <p className="text-sm font-medium truncate">{item.name}</p>
                 <p className="text-xs text-gray-500 uppercase">{item.type}</p>
               </div>
+              {item.type === 'pptx' && item.slide_count != null && item.slide_count > 0 && (
+                <div className="px-2.5 pb-2">
+                  <p className="text-xs text-gray-500">{item.slide_count} slide{item.slide_count !== 1 ? 's' : ''}</p>
+                </div>
+              )}
             </div>
           );
         })}
