@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS screens (
   name TEXT NOT NULL,
   location TEXT,
   api_key TEXT NOT NULL UNIQUE,
-  status TEXT DEFAULT 'offline',
+  status TEXT DEFAULT 'offline' CHECK (status IN ('online', 'offline')),
   last_seen_at TIMESTAMPTZ,
   current_playlist_id UUID REFERENCES playlists(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -55,9 +55,4 @@ CREATE TABLE IF NOT EXISTS screen_events (
   event_type TEXT NOT NULL,
   triggered_by TEXT,
   occurred_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS schema_migrations (
-  version TEXT PRIMARY KEY,
-  applied_at TIMESTAMPTZ DEFAULT now()
 );
