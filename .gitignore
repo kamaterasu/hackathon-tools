@@ -11,3 +11,4 @@ pnpm-debug.log*
 .vscode/
 Thumbs.db
 .pnpm-store/
+/docs
