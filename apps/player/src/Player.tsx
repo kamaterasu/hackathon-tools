@@ -77,10 +77,10 @@ export function Player({ screenId, apiKey }: { screenId: string; apiKey: string 
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', position: 'relative' }}>
-      {media.type === 'image' && media.file_url && <ImageRenderer url={media.file_url} />}
-      {media.type === 'video' && media.file_url && <VideoRenderer url={media.file_url} onEnded={advance} />}
-      {media.type === 'pptx' && media.slides && <SlideRenderer slides={media.slides} duration={duration} onComplete={advance} />}
-      {media.type === 'url' && media.url && <UrlRenderer url={media.url} />}
+      {media.type === 'image' && media.file_url && <ImageRenderer key={item.id} url={media.file_url} />}
+      {media.type === 'video' && media.file_url && <VideoRenderer key={item.id} url={media.file_url} onEnded={advance} />}
+      {media.type === 'pptx' && media.slides && <SlideRenderer key={item.id} slides={media.slides} duration={duration} onComplete={advance} />}
+      {media.type === 'url' && media.url && <UrlRenderer key={item.id} url={media.url} />}
       {media.type !== 'video' && media.type !== 'pptx' && (
         <TimerBar key={`${timerKey}-${safeIndex}`} duration={duration} onComplete={advance} />
       )}

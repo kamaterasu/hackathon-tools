@@ -17,7 +17,7 @@ export function SlideRenderer({ slides, duration, onComplete }: Props) {
   }, [idx, perSlide, slides.length, onComplete]);
 
   return (
-    <img key={idx} src={slides[idx]} alt={`Slide ${idx + 1}`}
+    <img src={slides[idx]} alt={`Slide ${idx + 1}`}
       style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
   );
 }
