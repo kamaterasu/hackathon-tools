@@ -9,5 +9,5 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   'screen:register': (data: { screenId: string; apiKey: string }) => void;
-  'screen:heartbeat': (data: { screenId: string }) => void;
+  'screen:heartbeat': () => void;
 }

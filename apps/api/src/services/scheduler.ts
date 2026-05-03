@@ -10,7 +10,9 @@ export function startScheduler() {
       const { rows: due } = await db.query(
         `SELECT s.*, p.id AS p_id, p.name AS p_name, p.loop
          FROM schedules s JOIN playlists p ON p.id = s.playlist_id
-         WHERE s.start_at <= $1 AND (s.end_at IS NULL OR s.end_at > $1)`,
+         WHERE s.start_at <= $1
+           AND s.start_at >= $1 - interval '70 seconds'
+           AND (s.end_at IS NULL OR s.end_at > $1)`,
         [now]
       );
 

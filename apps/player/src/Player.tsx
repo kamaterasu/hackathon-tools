@@ -43,7 +43,7 @@ export function Player({ screenId, apiKey }: { screenId: string; apiKey: string 
     const hb = setInterval(() => socket.emit('screen:heartbeat'), 10000);
 
     socket.on('screen:command', ({ action, payload }: { action: string; payload?: { index?: number } }) => {
-      if (action === 'next') { setIndex(i => i + 1); setTimerKey(k => k + 1); }
+      if (action === 'next') { setIndex(i => Math.min(i + 1, (playlist?.items.length ?? 1) - 1)); setTimerKey(k => k + 1); }
       if (action === 'prev') { setIndex(i => Math.max(0, i - 1)); setTimerKey(k => k + 1); }
       if (action === 'goto' && payload?.index !== undefined) { setIndex(payload.index); setTimerKey(k => k + 1); }
     });

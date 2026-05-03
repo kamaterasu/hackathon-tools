@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
 import { db } from '../db/client.js';
 import { getIo } from '../socket/index.js';
+import { publicUrl } from '../services/storage.js';
 
 export async function screenRoutes(app: FastifyInstance) {
   app.get('/api/screens', async (_req, reply) => {
@@ -29,7 +30,7 @@ export async function screenRoutes(app: FastifyInstance) {
 
   app.put('/api/screens/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
-    const { rows: [check] } = await db.query('SELECT id FROM screens WHERE id=$1', [id]);
+    const { rows: [check] } = await db.query('SELECT id, current_playlist_id AS old_playlist_id FROM screens WHERE id=$1', [id]);
     if (!check) return reply.code(404).send({ error: 'Not found' });
     const { name, location, current_playlist_id } = req.body as { name?: string; location?: string; current_playlist_id?: string };
     const { rows: [updated] } = await db.query(
@@ -38,6 +39,33 @@ export async function screenRoutes(app: FastifyInstance) {
        WHERE id=$4 RETURNING *`,
       [name ?? null, location ?? null, current_playlist_id ?? null, id]
     );
+
+    // If playlist changed, emit screen:sync so player immediately loads new content
+    if (current_playlist_id && current_playlist_id !== check.old_playlist_id) {
+      const { rows: [p] } = await db.query('SELECT * FROM playlists WHERE id=$1', [current_playlist_id]);
+      if (p) {
+        const { rows: items } = await db.query(
+          'SELECT pi.*, row_to_json(m.*) AS media FROM playlist_items pi JOIN media_items m ON m.id=pi.media_item_id WHERE pi.playlist_id=$1 ORDER BY pi.position',
+          [p.id]
+        );
+        const playlist = {
+          ...p,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          items: (items as any[]).map((i: { media: { file_path?: string; type?: string; slide_count?: number } }) => ({
+            ...i,
+            media: {
+              ...i.media,
+              file_url: i.media.file_path ? publicUrl(i.media.file_path) : null,
+              slides: i.media.type === 'pptx' && i.media.slide_count
+                ? Array.from({ length: i.media.slide_count }, (_: unknown, idx: number) => publicUrl(`${i.media.file_path}-slide-${idx + 1}.png`))
+                : undefined,
+            }
+          }))
+        };
+        getIo().to(`screen:${id}`).emit('screen:sync', { playlist, current_index: 0 });
+      }
+    }
+
     return reply.send(updated);
   });
 
