@@ -26,7 +26,8 @@ export async function getPresignedUrl(key: string, expiresIn = 3600): Promise<st
 }
 
 export function publicUrl(key: string): string {
-  return `http://${config.minio.endpoint}:${config.minio.port}/${config.minio.bucket}/${key}`;
+  const base = config.minio.publicUrl ?? `http://${config.minio.endpoint}:${config.minio.port}`;
+  return `${base}/${config.minio.bucket}/${key}`;
 }
 
 export async function ensureBucket() {
