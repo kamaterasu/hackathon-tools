@@ -48,6 +48,8 @@ export async function playlistRoutes(app: FastifyInstance) {
 
   app.put('/api/playlists/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
+    const existing = await getPlaylistWithItems(id);
+    if (!existing) return reply.code(404).send({ error: 'Not found' });
     const body = req.body as { name?: string; loop?: boolean; items?: Array<{ id: string; position: number; duration_seconds?: number }> };
     if (body.name !== undefined || body.loop !== undefined) {
       await db.query('UPDATE playlists SET name=COALESCE($1,name), loop=COALESCE($2,loop) WHERE id=$3', [body.name ?? null, body.loop ?? null, id]);

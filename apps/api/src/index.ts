@@ -25,11 +25,11 @@ await app.register(scheduleRoutes);
 await app.register(playerRoutes);
 
 await ensureBucket();
-startScheduler();
 
-// Start Fastify first so app.server is ready, then attach Socket.io
+// Start Fastify first so app.server is ready, then attach Socket.io, then start scheduler
 await app.listen({ port: config.port, host: '0.0.0.0' });
 setupSocket(app.server);
+startScheduler();
 
 pptxWorker.on('completed', job => app.log.info(`PPTX job ${job.id} done`));
 thumbnailWorker.on('completed', job => app.log.info(`Thumbnail job ${job.id} done`));

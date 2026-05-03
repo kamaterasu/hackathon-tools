@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import { db } from '../db/client.js';
 import { uploadFile, deleteFile, publicUrl } from '../services/storage.js';
-import { mediaQueue } from '../jobs/queue.js';
+import { pptxQueue, thumbnailQueue } from '../jobs/queue.js';
 
 export async function mediaRoutes(app: FastifyInstance) {
   app.get('/api/media', async (_req, reply) => {
@@ -42,10 +42,10 @@ export async function mediaRoutes(app: FastifyInstance) {
     );
     const mediaId = rows[0].id;
     if (type === 'pptx') {
-      const job = await mediaQueue.add('convert-pptx', { mediaId, key });
+      const job = await pptxQueue.add('convert-pptx', { mediaId, key });
       return reply.code(202).send({ mediaId, jobId: job.id });
     }
-    await mediaQueue.add('thumbnail', { mediaId, key, type });
+    await thumbnailQueue.add('thumbnail', { mediaId, key, type });
     return reply.code(201).send({ mediaId });
   });
 

@@ -29,6 +29,8 @@ export async function screenRoutes(app: FastifyInstance) {
 
   app.put('/api/screens/:id', async (req, reply) => {
     const { id } = req.params as { id: string };
+    const { rows: [check] } = await db.query('SELECT id FROM screens WHERE id=$1', [id]);
+    if (!check) return reply.code(404).send({ error: 'Not found' });
     const { name, location, current_playlist_id } = req.body as { name?: string; location?: string; current_playlist_id?: string };
     const { rows: [updated] } = await db.query(
       `UPDATE screens SET name=COALESCE($1,name), location=COALESCE($2,location),
@@ -46,6 +48,8 @@ export async function screenRoutes(app: FastifyInstance) {
 
   app.post('/api/screens/:id/command', async (req, reply) => {
     const { id } = req.params as { id: string };
+    const { rows: [screen] } = await db.query('SELECT id FROM screens WHERE id=$1', [id]);
+    if (!screen) return reply.code(404).send({ error: 'Screen not found' });
     const { action, payload } = req.body as { action: string; payload?: Record<string, unknown> };
     getIo().to(`screen:${id}`).emit('screen:command', { action, payload });
     await db.query("INSERT INTO screen_events(screen_id,event_type,triggered_by) VALUES($1,$2,'admin')", [id, action]);

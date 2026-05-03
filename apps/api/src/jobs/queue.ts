@@ -1,7 +1,12 @@
 import { Queue } from 'bullmq';
 import { config } from '../config.js';
 
-const { hostname: host, port } = new URL(config.redisUrl);
-const connection = { host, port: Number(port) || 6379 };
+const u = new URL(config.redisUrl);
+const connection = {
+  host: u.hostname,
+  port: Number(u.port) || 6379,
+  ...(u.password ? { password: decodeURIComponent(u.password) } : {}),
+};
 
-export const mediaQueue = new Queue('media', { connection });
+export const pptxQueue = new Queue('pptx', { connection });
+export const thumbnailQueue = new Queue('thumbnail', { connection });

@@ -20,7 +20,9 @@ export function setupSocket(httpServer: HttpServer) {
       io.emit('screen:status', { screenId, status: 'online' });
     });
 
-    socket.on('screen:heartbeat', async ({ screenId }: { screenId: string }) => {
+    socket.on('screen:heartbeat', async () => {
+      const { screenId } = socket.data;
+      if (!screenId) return;
       await db.query('UPDATE screens SET last_seen_at=now() WHERE id=$1', [screenId]);
     });
 
