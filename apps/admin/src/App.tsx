@@ -6,12 +6,14 @@ import {
   NavLink,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Monitor, Image, ListVideo, Calendar } from "lucide-react";
+import { Monitor, Image, ListVideo, Calendar, LogOut } from "lucide-react";
+import { useState } from "react";
 import { Screens } from "./pages/Screens.js";
 import { ScreenDetail } from "./pages/ScreenDetail.js";
 import { Media } from "./pages/Media.js";
 import { Playlists } from "./pages/Playlists.js";
 import { Schedules } from "./pages/Schedules.js";
+import { Login } from "./pages/Login.js";
 
 const qc = new QueryClient();
 const nav = [
@@ -22,6 +24,12 @@ const nav = [
 ];
 
 export function App() {
+  const [token, setToken] = useState(() => localStorage.getItem("adminToken") ?? "");
+
+  if (!token) return <Login onLogin={setToken} />;
+
+  const logout = () => { localStorage.removeItem("adminToken"); setToken(""); };
+
   return (
     <QueryClientProvider client={qc}>
       <BrowserRouter>
@@ -44,6 +52,12 @@ export function App() {
                 <Icon size={18} /> {label}
               </NavLink>
             ))}
+            <button
+              onClick={logout}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg mx-2 mt-auto text-gray-500 hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              <LogOut size={18} /> Logout
+            </button>
           </nav>
           <main className="flex-1 overflow-auto">
             <Routes>

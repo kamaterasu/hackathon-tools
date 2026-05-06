@@ -11,7 +11,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "../config.js";
 
 const s3 = new S3Client({
-  endpoint: `http://${config.minio.endpoint}:${config.minio.port}`,
+  endpoint: config.minio.endpointUrl ?? `http://${config.minio.endpoint}:${config.minio.port}`,
   region: "us-east-1",
   credentials: {
     accessKeyId: config.minio.accessKey,
@@ -61,7 +61,7 @@ export function publicUrl(key: string): string {
   // Otherwise return a server-relative path so any device on the network
   // resolves it through the same host it's already talking to, avoiding
   // hard-coded localhost:9000 URLs that break on other machines.
-  return `/api/media/proxy/${key}`;
+  return `${config.apiPublicUrl}/api/media/proxy/${key}`;
 }
 
 export async function streamFile(key: string) {

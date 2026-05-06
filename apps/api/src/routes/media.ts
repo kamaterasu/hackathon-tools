@@ -70,11 +70,13 @@ export async function mediaRoutes(app: FastifyInstance) {
     const type =
       ext === ".pptx"
         ? "pptx"
-        : [".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)
-          ? "image"
-          : [".mp4", ".webm", ".mov"].includes(ext)
-            ? "video"
-            : "image";
+        : ext === ".pdf"
+          ? "pdf"
+          : [".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)
+            ? "image"
+            : [".mp4", ".webm", ".mov"].includes(ext)
+              ? "video"
+              : "image";
     const { rows } = await db.query<{ id: string }>(
       "INSERT INTO media_items(name, type, file_path) VALUES($1,$2,$3) RETURNING id",
       [data.filename, type, key],
@@ -86,6 +88,15 @@ export async function mediaRoutes(app: FastifyInstance) {
     }
     await thumbnailQueue.add("thumbnail", { mediaId, key, type });
     return reply.code(201).send({ mediaId });
+  });
+
+  app.post("/api/media/timer", async (req, reply) => {
+    const { name, duration_seconds = 10 } = req.body as { name: string; duration_seconds?: number };
+    const { rows } = await db.query(
+      "INSERT INTO media_items(name, type, duration_seconds) VALUES($1,'timer',$2) RETURNING *",
+      [name, duration_seconds],
+    );
+    return reply.code(201).send(rows[0]);
   });
 
   app.post("/api/media/url", async (req, reply) => {

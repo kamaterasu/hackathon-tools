@@ -30,7 +30,7 @@ function ScreenSetup({
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/screens/auto-register", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/screens/auto-register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: trimmed }),

@@ -54,6 +54,7 @@ export function setupSocket(httpServer: HttpServer) {
           "UPDATE screens SET status='online', last_seen_at=now() WHERE id=$1",
           [screenId],
         );
+        console.log(`[socket] screen registered: ${screenId}`);
         io.emit("screen:status", { screenId, status: "online" });
       },
     );

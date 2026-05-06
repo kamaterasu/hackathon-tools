@@ -5,6 +5,8 @@ import { ImageRenderer } from "./renderers/ImageRenderer.js";
 import { VideoRenderer } from "./renderers/VideoRenderer.js";
 import { SlideRenderer } from "./renderers/SlideRenderer.js";
 import { UrlRenderer } from "./renderers/UrlRenderer.js";
+import { PdfRenderer } from "./renderers/PdfRenderer.js";
+import { TimerRenderer } from "./renderers/TimerRenderer.js";
 
 interface Media {
   type: string;
@@ -57,7 +59,7 @@ export function Player({
     //      live-preview iframe and the physical screen never diverge.
     const handleConnect = () => {
       socket.emit("screen:register", { screenId, apiKey });
-      fetch(`/api/player/${screenId}/state`, {
+      fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/player/${screenId}/state`, {
         headers: { "x-api-key": apiKey },
       })
         .then((r) => r.json())
@@ -175,7 +177,13 @@ export function Player({
       {media.type === "url" && media.url && (
         <UrlRenderer key={item.id} url={media.url} />
       )}
-      {media.type !== "video" && media.type !== "pptx" && (
+      {media.type === "pdf" && media.file_url && (
+        <PdfRenderer key={item.id} url={media.file_url} duration={duration} onComplete={advance} />
+      )}
+      {media.type === "timer" && (
+        <TimerRenderer key={`${item.id}-${timerKey}`} duration={duration} onComplete={advance} />
+      )}
+      {media.type !== "video" && media.type !== "pptx" && media.type !== "pdf" && media.type !== "timer" && (
         <TimerBar
           key={`${timerKey}-${safeIndex}`}
           duration={duration}

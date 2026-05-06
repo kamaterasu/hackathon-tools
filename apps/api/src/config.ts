@@ -5,7 +5,9 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://media:media@localhost:5432/media_manager',
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  apiPublicUrl: process.env.API_PUBLIC_URL ?? '',
   minio: {
+    endpointUrl: process.env.STORAGE_ENDPOINT_URL ?? null,
     endpoint: process.env.MINIO_ENDPOINT ?? 'localhost',
     port: Number(process.env.MINIO_PORT ?? 9000),
     accessKey: process.env.MINIO_ACCESS_KEY ?? 'minioadmin',

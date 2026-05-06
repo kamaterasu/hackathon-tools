@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, SkipForward, SkipBack, Trash2, Copy } from "lucide-react";
+import { ChevronLeft, SkipForward, SkipBack, Trash2, Copy, Pause, Play, RotateCcw, Timer } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "../api/index.js";
 import { socket } from "../socket.js";
@@ -52,8 +52,11 @@ export function ScreenDetail() {
     };
   }, [id, qc]);
 
+  const [timerPaused, setTimerPaused] = useState(false);
+
   const command = useMutation({
-    mutationFn: (action: string) => api.screens.command(id!, action),
+    mutationFn: ({ action, payload }: { action: string; payload?: unknown }) =>
+      api.screens.command(id!, action, payload),
   });
   const assign = useMutation({
     mutationFn: (playlist_id: string) =>
@@ -79,7 +82,7 @@ export function ScreenDetail() {
   if (isLoading) return <div className="p-8 text-gray-400">Loading...</div>;
   if (!s) return <div className="p-8 text-red-400">Screen not found</div>;
 
-  const playerUrl = `${window.location.protocol}//${window.location.hostname}:5174/?screenId=${s.id}&apiKey=${encodeURIComponent(s.api_key)}`;
+  const playerUrl = `${import.meta.env.VITE_PLAYER_URL ?? ""}/?screenId=${s.id}&apiKey=${encodeURIComponent(s.api_key)}`;
 
   return (
     <div className="p-8 max-w-3xl">
@@ -147,17 +150,44 @@ export function ScreenDetail() {
         <h2 className="text-sm font-semibold mb-3">Live Controls</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => command.mutate("prev")}
+            onClick={() => command.mutate({ action: "prev" })}
             className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm"
           >
             <SkipBack size={14} /> Prev
           </button>
           <button
-            onClick={() => command.mutate("next")}
+            onClick={() => command.mutate({ action: "next" })}
             className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm"
           >
             <SkipForward size={14} /> Next
           </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><Timer size={14} /> Timer Controls</h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => { command.mutate({ action: timerPaused ? "timer:resume" : "timer:pause" }); setTimerPaused(p => !p); }}
+            className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-600 px-3 py-2 rounded-lg text-sm"
+          >
+            {timerPaused ? <><Play size={14} /> Resume</> : <><Pause size={14} /> Pause</>}
+          </button>
+          <button
+            onClick={() => { command.mutate({ action: "timer:restart" }); setTimerPaused(false); }}
+            className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm"
+          >
+            <RotateCcw size={14} /> Restart
+          </button>
+          {[{ label: "−1 min", s: -60 }, { label: "−10s", s: -10 }, { label: "+10s", s: 10 }, { label: "+1 min", s: 60 }].map(({ label, s }) => (
+            <button
+              key={label}
+              onClick={() => command.mutate({ action: "timer:adjust", payload: { seconds: s } })}
+              className="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm font-mono"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 

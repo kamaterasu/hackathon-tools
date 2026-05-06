@@ -1,13 +1,21 @@
-const base = "/api";
+const base = (import.meta.env.VITE_API_URL ?? "") + "/api";
+
+function getToken() { return localStorage.getItem('adminToken') ?? ''; }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {
     headers: {
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      Authorization: `Bearer ${getToken()}`,
       ...init?.headers,
     },
     ...init,
   });
+  if (res.status === 401) {
+    localStorage.removeItem('adminToken');
+    window.location.reload();
+    throw new Error('Session expired');
+  }
   if (!res.ok) throw new Error(await res.text());
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -42,6 +50,8 @@ export const api = {
     },
     addUrl: (body: { name: string; url: string; duration_seconds?: number }) =>
       apiFetch("/media/url", { method: "POST", body: JSON.stringify(body) }),
+    addTimer: (body: { name: string; duration_seconds: number }) =>
+      apiFetch("/media/timer", { method: "POST", body: JSON.stringify(body) }),
     delete: (id: string) => apiFetch(`/media/${id}`, { method: "DELETE" }),
   },
   playlists: {
