@@ -8,7 +8,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, GripVertical, Trash2 } from "lucide-react";
+import { Plus, GripVertical, Trash2, RefreshCw } from "lucide-react";
 import { api } from "../api/index.js";
 
 type Item = {
@@ -16,8 +16,8 @@ type Item = {
   media: { name: string; type: string };
   duration_seconds?: number;
 };
-type PlaylistDetail = { id: string; name: string; items: Item[] };
-type Playlist = { id: string; name: string };
+type PlaylistDetail = { id: string; name: string; loop: boolean; items: Item[] };
+type Playlist = { id: string; name: string; loop: boolean };
 type MediaItem = { id: string; name: string };
 
 function SortableItem({
@@ -89,6 +89,7 @@ export function Playlists() {
       qc.invalidateQueries({ queryKey: ["playlists"] });
       if (selected === id) setSelected(null);
     },
+    onError: (e: Error) => alert(`Delete failed: ${e.message}`),
   });
 
   const create = useMutation({
@@ -98,6 +99,7 @@ export function Playlists() {
       setSelected((p as Playlist).id);
       setNewName("");
     },
+    onError: (e: Error) => alert(`Create failed: ${e.message}`),
   });
 
   const addItem = useMutation({
@@ -105,12 +107,14 @@ export function Playlists() {
       api.playlists.addItem(selected!, { media_item_id }),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["playlists", selected] }),
+    onError: (e: Error) => alert(`Add item failed: ${e.message}`),
   });
 
   const removeItem = useMutation({
     mutationFn: (itemId: string) => api.playlists.removeItem(selected!, itemId),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["playlists", selected] }),
+    onError: (e: Error) => alert(`Remove failed: ${e.message}`),
   });
 
   const updateItem = useMutation({
@@ -133,6 +137,16 @@ export function Playlists() {
     },
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["playlists", selected] }),
+    onError: (e: Error) => alert(`Update failed: ${e.message}`),
+  });
+
+  const toggleLoop = useMutation({
+    mutationFn: (loop: boolean) => api.playlists.update(selected!, { loop }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["playlists", selected] });
+      qc.invalidateQueries({ queryKey: ["playlists"] });
+    },
+    onError: (e: Error) => alert(`Update failed: ${e.message}`),
   });
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -150,8 +164,8 @@ export function Playlists() {
   const d = detail as PlaylistDetail | undefined;
 
   return (
-    <div className="p-8 flex gap-6">
-      <div className="w-64 shrink-0">
+    <div className="p-4 md:p-8 flex flex-col lg:flex-row gap-6">
+      <div className="w-full lg:w-64 lg:shrink-0">
         <h1 className="text-lg font-bold mb-4">Playlists</h1>
         <div className="flex gap-2 mb-4">
           <input
@@ -163,7 +177,7 @@ export function Playlists() {
           />
           <button
             onClick={() => create.mutate()}
-            disabled={!newName}
+            disabled={!newName || create.isPending}
             className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 p-2 rounded-lg"
           >
             <Plus size={16} />
@@ -187,7 +201,7 @@ export function Playlists() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                deletePlaylist.mutate(p.id);
+                if (window.confirm(`Delete playlist "${p.name}"?`)) deletePlaylist.mutate(p.id);
               }}
               className="pr-2 text-gray-500 hover:text-red-400 transition-colors"
               title="Delete playlist"
@@ -203,7 +217,21 @@ export function Playlists() {
 
       {selected && d && (
         <div className="flex-1">
-          <h2 className="text-lg font-semibold mb-4">{d.name}</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{d.name}</h2>
+            <button
+              onClick={() => toggleLoop.mutate(!d.loop)}
+              disabled={toggleLoop.isPending}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                d.loop
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-800 hover:bg-gray-700 text-gray-400"
+              }`}
+              title="Toggle loop"
+            >
+              <RefreshCw size={13} /> {d.loop ? "Looping" : "No loop"}
+            </button>
+          </div>
           <select
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm mb-4"
             defaultValue=""
@@ -239,9 +267,11 @@ export function Playlists() {
               <div className="space-y-2">
                 {d.items.map((item) => (
                   <SortableItem
-                    key={`${item.id}-${item.duration_seconds ?? 10}`}
+                    key={item.id}
                     item={item}
-                    onRemove={() => removeItem.mutate(item.id)}
+                    onRemove={() => {
+                      if (window.confirm(`Remove "${item.media.name}" from playlist?`)) removeItem.mutate(item.id);
+                    }}
                     onDurationChange={(seconds) =>
                       updateItem.mutate({
                         itemId: item.id,

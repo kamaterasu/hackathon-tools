@@ -25,11 +25,13 @@ export function Schedules() {
       qc.invalidateQueries({ queryKey: ['schedules'] });
       setForm({ screen_id: '', playlist_id: '', start_at: '', end_at: '' });
     },
+    onError: (e: Error) => alert(`Create failed: ${e.message}`),
   });
 
   const del = useMutation({
     mutationFn: api.schedules.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['schedules'] }),
+    onError: (e: Error) => alert(`Delete failed: ${e.message}`),
   });
 
   const events = (schedules as Schedule[]).map(s => ({
@@ -40,10 +42,10 @@ export function Schedules() {
   }));
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 md:p-8 max-w-3xl">
       <h1 className="text-2xl font-bold mb-6">Schedules</h1>
 
-      <div style={{ height: 500 }} className="mb-6">
+      <div className="mb-6 h-64 md:h-[400px] lg:h-[500px]">
         <Calendar
           localizer={localizer}
           events={events}
@@ -56,7 +58,7 @@ export function Schedules() {
 
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6">
         <h2 className="text-sm font-semibold mb-3">New Schedule</h2>
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <select className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm"
             value={form.screen_id} onChange={e => setForm(v => ({ ...v, screen_id: e.target.value }))}>
             <option value="">Select screen...</option>
@@ -79,9 +81,9 @@ export function Schedules() {
           </div>
         </div>
         <button onClick={() => create.mutate()}
-          disabled={!form.screen_id || !form.playlist_id || !form.start_at}
+          disabled={!form.screen_id || !form.playlist_id || !form.start_at || create.isPending}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-4 py-2 rounded-lg text-sm">
-          <Plus size={14} /> Create Schedule
+          <Plus size={14} /> {create.isPending ? 'Creating...' : 'Create Schedule'}
         </button>
       </div>
 
@@ -95,7 +97,10 @@ export function Schedules() {
                 {s.end_at && ` → ${new Date(s.end_at).toLocaleString()}`}
               </p>
             </div>
-            <button onClick={() => del.mutate(s.id)} className="text-gray-600 hover:text-red-400 p-1">
+            <button
+              onClick={() => { if (window.confirm('Delete this schedule?')) del.mutate(s.id); }}
+              className="text-gray-600 hover:text-red-400 p-1"
+            >
               <Trash2 size={16} />
             </button>
           </div>

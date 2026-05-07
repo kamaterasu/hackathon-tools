@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Trash2, Upload, Film, Image as ImgIcon, Presentation, Globe, Timer } from 'lucide-react';
+import { Trash2, Upload, Film, Image as ImgIcon, Presentation, Globe, Timer, FileText } from 'lucide-react';
 import { api } from '../api/index.js';
 
 type MediaItem = { id: string; name: string; type: string; thumbnail_url?: string; slide_count?: number; duration_seconds?: number };
-const icons = { image: ImgIcon, video: Film, pptx: Presentation, url: Globe, timer: Timer } as const;
+const icons = { image: ImgIcon, video: Film, pptx: Presentation, url: Globe, timer: Timer, pdf: FileText } as const;
 
 export function Media() {
   const qc = useQueryClient();
@@ -19,16 +19,19 @@ export function Media() {
   const del = useMutation({
     mutationFn: api.media.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['media'] }),
+    onError: (e: Error) => alert(`Delete failed: ${e.message}`),
   });
 
   const addUrl = useMutation({
     mutationFn: () => api.media.addUrl({ name: urlForm.name, url: urlForm.url, duration_seconds: Number(urlForm.duration) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['media'] }); setShowUrl(false); setUrlForm({ name: '', url: '', duration: '30' }); },
+    onError: (e: Error) => alert(`Failed to add URL: ${e.message}`),
   });
 
   const addTimer = useMutation({
     mutationFn: () => api.media.addTimer({ name: timerForm.name, duration_seconds: Number(timerForm.duration) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['media'] }); setShowTimer(false); setTimerForm({ name: '', duration: '10' }); },
+    onError: (e: Error) => alert(`Failed to add timer: ${e.message}`),
   });
 
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -51,7 +54,7 @@ export function Media() {
   if (isLoading) return <div className="p-8 text-gray-400">Loading...</div>;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Media Library</h1>
         <div className="flex gap-2">
@@ -73,7 +76,7 @@ export function Media() {
         <input {...getInputProps()} />
         <Upload size={24} className="mx-auto mb-2 text-gray-500" />
         <p className="text-sm text-gray-400">
-          {uploading ? 'Uploading...' : isDragActive ? 'Drop here...' : 'Drag & drop or click to upload (images, videos, PPTX)'}
+          {uploading ? 'Uploading...' : isDragActive ? 'Drop here...' : 'Drag & drop or click to upload (images, videos, PPTX, PDF)'}
         </p>
       </div>
 
@@ -90,8 +93,10 @@ export function Media() {
             type="number" min="1" placeholder="Duration (seconds)" value={timerForm.duration}
             onChange={e => setTimerForm(v => ({ ...v, duration: e.target.value }))} />
           <div className="flex gap-2">
-            <button onClick={() => addTimer.mutate()} disabled={!timerForm.name || !timerForm.duration}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-4 py-1.5 rounded-lg text-sm">Add</button>
+            <button onClick={() => addTimer.mutate()} disabled={!timerForm.name || !timerForm.duration || addTimer.isPending}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-4 py-1.5 rounded-lg text-sm">
+              {addTimer.isPending ? 'Adding...' : 'Add'}
+            </button>
             <button onClick={() => setShowTimer(false)} className="text-gray-400 hover:text-white text-sm px-3">Cancel</button>
           </div>
         </div>
@@ -108,8 +113,10 @@ export function Media() {
             type="number" placeholder="Duration (s)" value={urlForm.duration}
             onChange={e => setUrlForm(v => ({ ...v, duration: e.target.value }))} />
           <div className="flex gap-2">
-            <button onClick={() => addUrl.mutate()} disabled={!urlForm.name || !urlForm.url}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-4 py-1.5 rounded-lg text-sm">Add</button>
+            <button onClick={() => addUrl.mutate()} disabled={!urlForm.name || !urlForm.url || addUrl.isPending}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-4 py-1.5 rounded-lg text-sm">
+              {addUrl.isPending ? 'Adding...' : 'Add'}
+            </button>
             <button onClick={() => setShowUrl(false)} className="text-gray-400 hover:text-white text-sm px-3">Cancel</button>
           </div>
         </div>
@@ -124,7 +131,8 @@ export function Media() {
                 {item.thumbnail_url
                   ? <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
                   : <Icon size={32} className="text-gray-600" />}
-                <button onClick={() => del.mutate(item.id)}
+                <button
+                  onClick={() => { if (window.confirm(`Delete "${item.name}"?`)) del.mutate(item.id); }}
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-red-600 hover:bg-red-700 p-1.5 rounded-lg transition-opacity">
                   <Trash2 size={12} />
                 </button>

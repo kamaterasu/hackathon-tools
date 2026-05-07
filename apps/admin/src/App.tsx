@@ -6,7 +6,7 @@ import {
   NavLink,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Monitor, Image, ListVideo, Calendar, LogOut } from "lucide-react";
+import { Monitor, Image, ListVideo, Calendar, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Screens } from "./pages/Screens.js";
 import { ScreenDetail } from "./pages/ScreenDetail.js";
@@ -25,6 +25,7 @@ const nav = [
 
 export function App() {
   const [token, setToken] = useState(() => localStorage.getItem("adminToken") ?? "");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!token) return <Login onLogin={setToken} />;
 
@@ -33,15 +34,35 @@ export function App() {
   return (
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        <div className="flex h-screen">
-          <nav className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col py-6 gap-1 shrink-0">
-            <div className="px-4 mb-6 text-lg font-bold text-blue-400">
-              Hackathon Tools
+        <div className="flex h-screen overflow-hidden">
+          {/* Mobile backdrop */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-black/50 md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Sidebar */}
+          <nav
+            className={`fixed inset-y-0 left-0 z-40 w-56 bg-gray-900 border-r border-gray-800 flex flex-col py-6 gap-1 shrink-0 transition-transform duration-200
+              md:relative md:translate-x-0
+              ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          >
+            <div className="px-4 mb-6 flex items-center justify-between">
+              <span className="text-lg font-bold text-blue-400">Hackathon Tools</span>
+              <button
+                className="md:hidden text-gray-400 hover:text-white"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X size={18} />
+              </button>
             </div>
             {nav.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
                 to={to}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg mx-2 transition-colors ` +
                   (isActive
@@ -59,15 +80,29 @@ export function App() {
               <LogOut size={18} /> Logout
             </button>
           </nav>
-          <main className="flex-1 overflow-auto">
-            <Routes>
-              <Route path="/" element={<Navigate to="/screens" replace />} />
-              <Route path="/screens" element={<Screens />} />
-              <Route path="/screens/:id" element={<ScreenDetail />} />
-              <Route path="/media" element={<Media />} />
-              <Route path="/playlists" element={<Playlists />} />
-              <Route path="/schedules" element={<Schedules />} />
-            </Routes>
+
+          {/* Main content */}
+          <main className="flex-1 flex flex-col overflow-hidden">
+            {/* Mobile top bar */}
+            <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-gray-900 border-b border-gray-800 shrink-0">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="text-gray-400 hover:text-white"
+              >
+                <Menu size={20} />
+              </button>
+              <span className="text-blue-400 font-bold text-sm">Hackathon Tools</span>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <Routes>
+                <Route path="/" element={<Navigate to="/screens" replace />} />
+                <Route path="/screens" element={<Screens />} />
+                <Route path="/screens/:id" element={<ScreenDetail />} />
+                <Route path="/media" element={<Media />} />
+                <Route path="/playlists" element={<Playlists />} />
+                <Route path="/schedules" element={<Schedules />} />
+              </Routes>
+            </div>
           </main>
         </div>
       </BrowserRouter>

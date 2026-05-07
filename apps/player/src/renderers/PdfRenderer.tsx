@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 
-interface Props { url: string; duration: number; onComplete: () => void }
+interface Props { url: string; duration: number; initialElapsed?: number }
 
-export function PdfRenderer({ url, duration, onComplete }: Props) {
+export function PdfRenderer({ url, duration, initialElapsed = 0 }: Props) {
   useEffect(() => {
-    const t = setTimeout(onComplete, duration * 1000);
+    const remaining = Math.max(0, duration * 1000 - (initialElapsed ?? 0));
+    // Just hold the PDF — server clock will advance to next item
+    const t = setTimeout(() => {}, remaining);
     return () => clearTimeout(t);
-  }, [duration, onComplete]);
+  }, [duration, initialElapsed]);
 
   return (
     <embed

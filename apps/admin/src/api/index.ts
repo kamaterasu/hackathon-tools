@@ -43,8 +43,14 @@ export const api = {
       fd.append("file", file);
       const res = await fetch(`${base}/media/upload`, {
         method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
         body: fd,
       });
+      if (res.status === 401) {
+        localStorage.removeItem('adminToken');
+        window.location.reload();
+        throw new Error('Session expired');
+      }
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },

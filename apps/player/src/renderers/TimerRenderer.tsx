@@ -1,42 +1,62 @@
 import { useEffect, useRef, useState } from 'react';
 import { socket } from '../socket.js';
 
-interface Props { duration: number; onComplete: () => void }
+interface Props { duration: number; initialElapsed?: number }
 
-export function TimerRenderer({ duration, onComplete }: Props) {
-  const [remaining, setRemaining] = useState(duration);
+export function TimerRenderer({ duration, initialElapsed = 0 }: Props) {
+  // Wall-clock anchor: startTimeRef mirrors the server's started_at so all screens
+  // compute identical remaining values instead of drifting with independent setInterval ticks.
+  const startTimeRef = useRef(Date.now() - (initialElapsed ?? 0));
+  const pausedAtRef = useRef(0);
+  const [remaining, setRemaining] = useState(
+    Math.max(0, duration - Math.floor((initialElapsed ?? 0) / 1000))
+  );
   const [paused, setPaused] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
 
-  // tick
+  // Re-anchor when a new screen:sync arrives (new duration or initialElapsed).
   useEffect(() => {
-    setRemaining(duration);
+    startTimeRef.current = Date.now() - (initialElapsed ?? 0);
+    setRemaining(Math.max(0, duration - Math.floor((initialElapsed ?? 0) / 1000)));
     setPaused(false);
-  }, [duration]);
+  }, [duration, initialElapsed]);
 
+  // Tick: derive remaining from wall clock instead of counting blindly.
   useEffect(() => {
     if (paused) return;
     const interval = setInterval(() => {
-      setRemaining(r => {
-        if (r <= 1) { clearInterval(interval); onCompleteRef.current(); return 0; }
-        return r - 1;
-      });
-    }, 1000);
+      const elapsed = Date.now() - startTimeRef.current;
+      setRemaining(Math.max(0, duration - Math.floor(elapsed / 1000)));
+    }, 200);
     return () => clearInterval(interval);
-  }, [paused]);
+  }, [paused, duration]);
 
-  // socket commands from admin
   useEffect(() => {
     const handle = ({ action, payload }: { action: string; payload?: { seconds?: number } }) => {
-      if (action === 'timer:pause') setPaused(true);
-      else if (action === 'timer:resume') setPaused(false);
-      else if (action === 'timer:toggle') setPaused(p => !p);
-      else if (action === 'timer:restart') { setRemaining(duration); setPaused(false); }
-      else if (action === 'timer:adjust') {
+      if (action === 'timer:pause') {
+        pausedAtRef.current = Date.now();
+        setPaused(true);
+      } else if (action === 'timer:resume') {
+        // Shift anchor forward by pause duration so elapsed is unaffected.
+        startTimeRef.current += Date.now() - pausedAtRef.current;
+        setPaused(false);
+      } else if (action === 'timer:toggle') {
+        setPaused(p => {
+          if (p) {
+            startTimeRef.current += Date.now() - pausedAtRef.current;
+          } else {
+            pausedAtRef.current = Date.now();
+          }
+          return !p;
+        });
+      } else if (action === 'timer:restart') {
+        startTimeRef.current = Date.now();
+        setRemaining(duration);
+        setPaused(false);
+      } else if (action === 'timer:adjust') {
+        // Mirror server's adjustTimerClock: startedAt += seconds * 1000.
         const s = payload?.seconds ?? 0;
-        setRemaining(r => Math.max(0, r + s));
+        startTimeRef.current += s * 1000;
       }
     };
     socket.on('screen:command', handle);
